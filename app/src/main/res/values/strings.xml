@@ -2,4 +2,9 @@
     <string name="app_name">MoviesKotlin</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="now_playing_movies">Ahora en cines</string>
+    <string name="popular_movies">Peliculas Populares</string>
+    <string name="top_rated_movies">Películas mejor valoradas</string>
+    <string name="upcoming_movies">Próximas Películas</string>
+    <string name="languaje">es-ES</string>
 </resources>

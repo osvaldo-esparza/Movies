@@ -2,6 +2,7 @@ package com.soti.movieskotlin.UI.Movie
 
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.View
 import android.widget.Toast
@@ -18,23 +19,29 @@ import com.soti.movieskotlin.Data.Network.MovieService
 import com.soti.movieskotlin.Domain.MovieImplemModel
 import com.soti.movieskotlin.Domain.RetrofitClient
 import com.soti.movieskotlin.R
+import com.soti.movieskotlin.UI.Movie.Adapters.Concat.NowPlayingAdapter
 import com.soti.movieskotlin.UI.Movie.Adapters.Concat.PopularConcatAdapter
 import com.soti.movieskotlin.UI.Movie.Adapters.Concat.TopRatedConcatAdapter
 import com.soti.movieskotlin.UI.Movie.Adapters.Concat.UpcomingConcatAdapter
 import com.soti.movieskotlin.UI.Movie.Adapters.MovieAdapter
+import com.soti.movieskotlin.UI.Movie.Adapters.MovieNowAdapter
 import com.soti.movieskotlin.ViewModel.MovieViewModel
 import com.soti.movieskotlin.ViewModel.MovieViewModelFactory
 import com.soti.movieskotlin.databinding.FragmentMovieBinding
 
 class MovieFragment : Fragment(R.layout.fragment_movie), MovieAdapter.onMovieClickListener,
+    MovieNowAdapter.onMovieNowClickListener,
     PopularConcatAdapter.OnPopularListEndReachedListener,
     TopRatedConcatAdapter.OnTopListEndReachedListener,
-    UpcomingConcatAdapter.OnTUpListEndReachedListener {
+    UpcomingConcatAdapter.OnTUpListEndReachedListener,
+    NowPlayingAdapter.OnNowPlayingListEndReachedListener {
 
     private lateinit var binding: FragmentMovieBinding
     private var page: Int = 1
     private var pageTop: Int = 1
     private var pageUp: Int = 1
+    private var pageNow: Int = 1
+    private var languaje: String = ""
 
     private val viewModel by viewModels<MovieViewModel> {
         MovieViewModelFactory(
@@ -50,127 +57,107 @@ class MovieFragment : Fragment(R.layout.fragment_movie), MovieAdapter.onMovieCli
         super.onViewCreated(view, savedInstanceState)
         binding = FragmentMovieBinding.bind(view)
 
-        concatAdapter = ConcatAdapter()
+        try {
+
+            concatAdapter = ConcatAdapter()
+
+            languaje = getString(R.string.languaje)
+            binding.rvMovies.adapter = concatAdapter
+
+            if (viewModel.upcomingMovies.value == null)
+                viewModel.onCreate(page++, pageUp++, pageTop++, pageNow++, languaje)
+
+            viewModel.nowPlayingMovies.observe(viewLifecycleOwner, Observer {
+                concatAdapter.apply {
+                    try {
 
 
-
-
-        /*  viewModel.fetchMainScreenMovies().observe(viewLifecycleOwner, Observer {
-              when (it) {
-                  is Resource.Loading -> {
-
-                      binding.progressBar.visibility = View.VISIBLE
-                  }
-                  is Resource.Success -> {
-                      binding.progressBar.visibility = View.GONE
-                      concatAdapter.apply {
-                          addAdapter(
-                              0,
-                              UpcomingConcatAdapter(
-                                  MovieAdapter(
-                                      it.data.first.results,
-                                      this@MovieFragment
-                                  )
-                              )
-                          )
-                          addAdapter(
-                              1,
-                              TopRatedConcatAdapter(
-                                  MovieAdapter(
-                                      it.data.second.results,
-                                      this@MovieFragment
-                                  )
-                              )
-                          )
-                          addAdapter(
-                              2,
-                              PopularConcatAdapter(
-                                  MovieAdapter(
-                                      it.data.third.value?.results ?: emptyList(),
-                                      this@MovieFragment
-                                  )
-                              )
-                          )
-                      }
-
-                      binding.rvMovies.adapter = concatAdapter
-                  }
-                  is Resource.Failure -> {
-                      binding.progressBar.visibility = View.GONE
-                      Snackbar.make(view, "${it.exception}", Snackbar.LENGTH_SHORT)
-                          .setBackgroundTint(Color.RED)
-                          .setTextColor(Color.WHITE)
-                          .show()
-                  }
-              }
-          })*/
-
-        binding.rvMovies.adapter = concatAdapter
-
-       // if (viewModel.upcomingMovies.value == null)
-            viewModel.onCreate(page++)
-
-        viewModel.upcomingMovies.observe(viewLifecycleOwner, Observer {
-            concatAdapter.apply {
-                // Si ya hay un adaptador para películas populares, actualizarlo
-                val existingUpAdapter = findUpAdapter()
-                if (existingUpAdapter != null) {
-                    Toast.makeText(requireContext(),"fak",Toast.LENGTH_LONG).show()
-                    existingUpAdapter.updateUpMovies(it.results)
-                } else {
-                    // Si no hay un adaptador para películas populares, crear uno nuevo
-                    val newPopularAdapter = UpcomingConcatAdapter(
-                        MovieAdapter(it.results, this@MovieFragment),
-                        this@MovieFragment
-                    )
-                    addAdapter(0, newPopularAdapter)
+                        val existNowPlayingAdapter = findNowPlayingAdapter()
+                        if (existNowPlayingAdapter != null)
+                            existNowPlayingAdapter.updatePopularMovies(it.results)
+                        else {
+                            val newNowPlayingAdapter = NowPlayingAdapter(
+                                MovieNowAdapter(it.results, this@MovieFragment),
+                                this@MovieFragment
+                            )
+                            addAdapter(0, newNowPlayingAdapter)
+                        }
+                    } catch (e: Exception) {
+                        Log.i("OSVALDO", e.message.toString())
+                    }
                 }
-            }
-        })
+            })
 
-        viewModel.topRatedMovies.observe(viewLifecycleOwner, Observer {
-            concatAdapter.apply {
-                // Si ya hay un adaptador para películas populares, actualizarlo
-                val existingTopAdapter = findTopAdapter()
-                if (existingTopAdapter != null) {
-                    Toast.makeText(requireContext(),"fak",Toast.LENGTH_LONG).show()
-                    existingTopAdapter.updateTopMovies(it.results)
-                } else {
-                    // Si no hay un adaptador para películas populares, crear uno nuevo
-                    val newPopularAdapter = TopRatedConcatAdapter(
-                        MovieAdapter(it.results, this@MovieFragment),
-                        this@MovieFragment
-                    )
-                    addAdapter(1, newPopularAdapter)
+            viewModel.upcomingMovies.observe(viewLifecycleOwner, Observer {
+                concatAdapter.apply {
+                    // Si ya hay un adaptador para películas populares, actualizarlo
+                    val existingUpAdapter = findUpAdapter()
+                    if (existingUpAdapter != null) {
+                        existingUpAdapter.updateUpMovies(it.results)
+                    } else {
+                        // Si no hay un adaptador para películas populares, crear uno nuevo
+                        val newPopularAdapter = UpcomingConcatAdapter(
+                            MovieAdapter(it.results, this@MovieFragment),
+                            this@MovieFragment
+                        )
+                        addAdapter(1, newPopularAdapter)
+                    }
                 }
-            }
-        })
+            })
 
-        viewModel.popularMovies.observe(viewLifecycleOwner, Observer { popularMovies ->
-            concatAdapter.apply {
-                // Si ya hay un adaptador para películas populares, actualizarlo
-                val existingPopularAdapter = findPopularAdapter()
-                if (existingPopularAdapter != null) {
-                    Toast.makeText(requireContext(),"fak",Toast.LENGTH_LONG).show()
-                    existingPopularAdapter.updatePopularMovies(popularMovies.results)
-                } else {
-                    // Si no hay un adaptador para películas populares, crear uno nuevo
-                    val newPopularAdapter = PopularConcatAdapter(
-                        MovieAdapter(popularMovies.results, this@MovieFragment),
-                        this@MovieFragment
-                    )
-                    addAdapter(2, newPopularAdapter)
+            viewModel.topRatedMovies.observe(viewLifecycleOwner, Observer {
+                concatAdapter.apply {
+                    // Si ya hay un adaptador para películas populares, actualizarlo
+                    val existingTopAdapter = findTopAdapter()
+                    if (existingTopAdapter != null) {
+                        existingTopAdapter.updateTopMovies(it.results)
+                    } else {
+                        // Si no hay un adaptador para películas populares, crear uno nuevo
+                        val newPopularAdapter = TopRatedConcatAdapter(
+                            MovieAdapter(it.results, this@MovieFragment),
+                            this@MovieFragment
+                        )
+                        addAdapter(2, newPopularAdapter)
+                    }
                 }
-            }
-        })
+            })
+
+            viewModel.popularMovies.observe(viewLifecycleOwner, Observer { popularMovies ->
+                concatAdapter.apply {
+                    // Si ya hay un adaptador para películas populares, actualizarlo
+                    val existingPopularAdapter = findPopularAdapter()
+                    if (existingPopularAdapter != null) {
+                        existingPopularAdapter.updatePopularMovies(popularMovies.results)
+                    } else {
+                        // Si no hay un adaptador para películas populares, crear uno nuevo
+                        val newPopularAdapter = PopularConcatAdapter(
+                            MovieAdapter(popularMovies.results, this@MovieFragment),
+                            this@MovieFragment
+                        )
+                        addAdapter(3, newPopularAdapter)
+                    }
+                }
+            })
 
 
 
-        viewModel.isLoading2.observe(viewLifecycleOwner, Observer {
-            binding.progressBar.visibility = if (it) View.VISIBLE else View.GONE
-        })
+            viewModel.isLoading2.observe(viewLifecycleOwner, Observer {
+                binding.progressBar.visibility = if (it) View.VISIBLE else View.GONE
+            })
 
+        } catch (e: Exception) {
+            Log.i("OSVALDO", e.message.toString())
+        }
 
+    }
+
+    private fun ConcatAdapter.findNowPlayingAdapter(): NowPlayingAdapter? {
+        adapters.forEach {
+            if (it is NowPlayingAdapter)
+                return it
+
+        }
+        return null
     }
 
     private fun ConcatAdapter.findPopularAdapter(): PopularConcatAdapter? {
@@ -219,20 +206,40 @@ class MovieFragment : Fragment(R.layout.fragment_movie), MovieAdapter.onMovieCli
         findNavController().navigate(action)
     }
 
+    override fun onMovieClicks(movie: Movie) {
+
+        val action = MovieFragmentDirections
+            .actionMovieFragmentToMovieDetailFragment(
+                movie.poster_path,
+                movie.backdrop_path,
+                movie.vote_average.toFloat(),
+                movie.vote_count,
+                movie.overview,
+                movie.title,
+                movie.original_languaje,
+                movie.release_date
+            )
+        findNavController().navigate(action)
+    }
+
     // Implementación del método de la interfaz para manejar el evento de llegar al final del RecyclerView
     override fun onPopularListEndReached() {
-        viewModel.onPopularListEndReached(page++,"POPULAR")
+        viewModel.onPopularListEndReached(page++, "POPULAR", languaje)
         //Toast.makeText(requireContext(),"LLEGO",Toast.LENGTH_LONG).show()
     }
 
     override fun onTopListEndReached() {
-        viewModel.onPopularListEndReached(pageTop++,"TOP")
-       // Toast.makeText(requireContext(),pageTop.toString(),Toast.LENGTH_LONG).show()
+        viewModel.onPopularListEndReached(pageTop++, "TOP", languaje)
+        // Toast.makeText(requireContext(),pageTop.toString(),Toast.LENGTH_LONG).show()
     }
 
     override fun onUpListEndReached() {
-        viewModel.onPopularListEndReached(pageUp++,"UP")
+        viewModel.onPopularListEndReached(pageUp++, "UP", languaje)
         //Toast.makeText(requireContext(),"LLEGO",Toast.LENGTH_LONG).show()
+    }
+
+    override fun onNowPlayingListEndReached() {
+        viewModel.onPopularListEndReached(pageNow++, "NOW", languaje)
     }
 
 }

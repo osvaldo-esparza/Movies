@@ -10,7 +10,7 @@
     <com.google.android.material.textview.MaterialTextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Top rated Movies"
+        android:text="@string/top_rated_movies"
         android:textStyle="bold"
         android:textSize="20sp"/>
 
