@@ -16,9 +16,9 @@ This is a sample application built using Kotlin, following the MVVM architecture
 </div>
 
 <div style="display: flex; flex-direction: row; align: center">
-<img src="/images/PrincipalEN.png" width="300"/>
+<img src="/images/PrincipaES.png" width="300"/>
 
-<img src="/images/DetailEN.png" width="300"/>
+<img src="/images/DetailES.png" width="300"/>
 </div>
 
 
